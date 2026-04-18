@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Clipper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .video-container {
+            margin: 30px 0;
+            text-align: center;
+        }
+        video {
+            max-width: 100%;
+            border-radius: 5px;
+        }
+        .clips-section {
+            margin-top: 30px;
+        }
+        .clip-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .clip-info {
+            flex-grow: 1;
+        }
+        .download-btn {
+            background-color: #2196F3;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .download-btn:hover {
+            background-color: #0b7dda;
+        }
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 AI Video Clipper</h1>
+        
+        <form id="videoForm">
+            <div class="form-group">
+                <label for="videoUrl">Enter Video URL:</label>
+                <input type="url" id="videoUrl" name="url" placeholder="https://www.youtube.com/watch?v=..." required>
+            </div>
+            <button type="submit">Process Video</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <p>Downloading and processing video... This may take a few minutes.</p>
+        </div>
+
+        <div id="results" style="display: none;">
+            <h2>Video Preview</h2>
+            <div class="video-container">
+                <video id="videoPlayer" controls>
+                    <source id="videoSource" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+
+            <div class="clips-section">
+                <h2>Generated Short Clips</h2>
+                <div id="clipsList"></div>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        document.getElementById('videoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const url = document.getElementById('videoUrl').value;
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const error = document.getElementById('error');
+            
+            // Show loading
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const response = await fetch('/process/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update video player
+                document.getElementById('videoSource').src = `/static/uploads/${data.video_filename}`;
+                document.getElementById('videoPlayer').load();
+                
+                // Update clips
+                const clipsList = document.getElementById('clipsList');
+                clipsList.innerHTML = '';
+                
+                data.clips.forEach((clip, index) => {
+                    const clipItem = document.createElement('div');
+                    clipItem.className = 'clip-item';
+                    clipItem.innerHTML = `
+                        <div class="clip-info">
+                            <strong>Clip ${index + 1}</strong><br>
+                            Start: ${data.highlights[index].start.toFixed(2)}s - End: ${data.highlights[index].end.toFixed(2)}s
+                        </div>
+                        <a href="/static/${clip}" class="download-btn" download>Download</a>
+                    `;
+                    clipsList.appendChild(clipItem);
+                });
+                
+                // Show results
+                loading.style.display = 'none';
+                results.style.display = 'block';
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = `Error: ${err.message}`;
+            }
+        });
+    </script>
+</body>
+</html>

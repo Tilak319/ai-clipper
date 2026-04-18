@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+scenedetect
+moviepy
+openai-whisper
+opencv-python
+yt-dlp
+jinja2
