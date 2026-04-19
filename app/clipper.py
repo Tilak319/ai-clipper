@@ -11,7 +11,11 @@ def create_clip(input_path, start, end, output_path):
         "-i", input_path,
         "-ss", str(start),
         "-t", str(duration),
-        "-c", "copy",
+        "-c:v", "libx264",
+        "-crf", "28",
+        "-preset", "fast",
+        "-c:a", "aac",
+        "-b:a", "128k",
         "-avoid_negative_ts", "make_zero",
         "-y",
         output_path

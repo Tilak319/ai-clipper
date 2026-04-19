@@ -46,7 +46,7 @@ def download_video(url: str, output_path: str):
     FFMPEG_PATH = r"C:\Users\Tilak Rajora\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1-full_build\bin\ffmpeg.exe"
     ydl_opts = {
         'outtmpl': output_path,
-        'format': 'best',  # Best quality available
+'format': 'best[height<=720]',  # Max 720p to limit size to ~500MB
         'ffmpeg_location': FFMPEG_PATH
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -65,6 +65,12 @@ async def process_video(request: VideoRequest):
         print(f"Downloading to: {video_path}")
         # Download video
         download_video(request.url, video_path)
+        
+        # Check file size limit (4GB)
+        max_size_bytes = 4 * 1024 * 1024 * 1024  # 4GB
+        if os.path.getsize(video_path) > max_size_bytes:
+            os.remove(video_path)  # Cleanup
+            raise HTTPException(status_code=400, detail="Video file too large (>4GB). Please choose a shorter/lower quality video.")
         
         if not os.path.exists(video_path):
             raise Exception(f"Video file not found after download: {video_path}")
